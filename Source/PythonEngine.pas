@@ -4997,8 +4997,6 @@ end;
 function TPythonInterface.PyUnicode_Check( obj : PPyObject ) : Boolean;
 begin
   Result := PyObject_TypeCheck(obj, PyUnicode_Type);
-  if not Result then
-  	Result := PyString_Check(obj);
 end;
 
 function TPythonInterface.PyUnicode_CheckExact(obj: PPyObject): Boolean;
@@ -5992,35 +5990,34 @@ begin
   else
     _globals := _locals;
 
-  if IsPython3000 then begin
-  try
-    Code := Py_CompileString(PAnsiChar(CleanString(command)),
-      PAnsiChar(EncodeString(FileName)), mode);
-    if Code = nil then
-      CheckError(False);
-    Result := PyEval_EvalCode(Code, _globals, _locals );
-    if Result = nil then
-      CheckError(False);
-  except
-    if PyErr_Occurred <> nil then
-      CheckError(False)
-    else
-      raise;
-  end;
-  end else begin
-  try
-    Result := PyRun_String(PAnsiChar(CleanString(command)), mode, _globals, _locals);
-    if Result = nil then
-      CheckError(False);
-    Py_FlushLine;
-  except
-    Py_FlushLine;
-    if PyErr_Occurred <> nil then
-      CheckError(False)
-    else
-      raise;
-  end;
-  end;
+  if IsPython3000 then
+    try
+      Code := Py_CompileString(PAnsiChar(CleanString(command)),
+        PAnsiChar(EncodeString(FileName)), mode);
+      if Code = nil then
+        CheckError(False);
+      Result := PyEval_EvalCode(Code, _globals, _locals );
+      if Result = nil then
+        CheckError(False);
+    except
+      if PyErr_Occurred <> nil then
+        CheckError(False)
+      else
+        raise;
+    end
+  else
+    try
+      Result := PyRun_String(PAnsiChar(CleanString(command)), mode, _globals, _locals);
+      if Result = nil then
+        CheckError(False);
+      Py_FlushLine;
+    except
+      Py_FlushLine;
+      if PyErr_Occurred <> nil then
+        CheckError(False)
+      else
+        raise;
+    end;
 end;
 
 procedure TPythonEngine.ExecStrings(strings: TStrings; const FileName: string =
@@ -6259,16 +6256,23 @@ procedure TPythonEngine.RaiseError;
 
   function GetTypeAsString( obj : PPyObject ) : string;
   begin
-    if PyClass_Check( obj ) then
-      with PPyClassObject(obj)^ do
-        if IsPython3000 then
-          Result := PyObjectAsString(cl_name)
-        else
-          Result := PyString_AsDelphiString(cl_name)
-    else if PyType_CheckExact( obj ) then
-      Result := string(PPyTypeObject(obj).tp_name)
-    else
-      Result := PyObjectAsString(obj);
+    if IsPython3000 then begin
+      if PyType_CheckExact( obj ) then
+        Result := string(PPyTypeObject(obj).tp_name)
+      else
+        Result := PyObjectAsString(obj);
+    end else begin
+      if PyClass_Check( obj ) then
+        with PPyClassObject(obj)^ do
+          if IsPython3000 then
+            Result := PyObjectAsString(cl_name)
+          else
+            Result := PyString_AsDelphiString(cl_name)
+      else if PyType_CheckExact( obj ) then
+        Result := string(PPyTypeObject(obj).tp_name)
+      else
+        Result := PyObjectAsString(obj);
+    end;
   end;
 
 var
@@ -6388,28 +6392,41 @@ var
   S : PPyObject;
   W : UnicodeString;
 begin
-  if not IsPython3000 then
-    Exit(PyString_AsDelphiString(obj));
+  if IsPython3000 then begin
+    Result := '';
+    if not Assigned( obj ) then
+      Exit;
 
-  Result := '';
-  if not Assigned( obj ) then
-    Exit;
+    if PyUnicode_Check(obj) then
+    begin
+      W := PyUnicodeAsString(obj);
+      Result := string(W);
+      Exit;
+    end;
+    S := PyObject_Str( obj );
+    if Assigned(S) and PyUnicode_Check(S) then
+    begin
+      W := PyUnicodeAsString(S);
+      Result := string(W);
+    end;
+    Py_XDECREF(S);
+  end else begin
+    CheckPython;
+    Result := '';
+    if not Assigned( obj ) then
+      Exit;
 
-  if PyUnicode_Check(obj) then
-  begin
-    W := PyUnicodeAsString(obj);
-    Result := string(W);
-    Exit;
+    if PyUnicode_Check(obj) then
+    begin
+      w := PyUnicode_AsWideString(obj);
+      Result := string(w);
+      Exit;
+    end;
+    s := PyObject_Str( obj );
+    if Assigned(s) and PyString_Check(s) then
+      Result := PyString_AsDelphiString(s);
+    Py_XDECREF(s);
   end;
-  S := PyObject_Str( obj );
-  if Assigned(s) and PyString_Check(s) then
-    Result := PyString_AsDelphiString(s)
-  else if Assigned(S) and PyUnicode_Check(S) then
-  begin
-    W := PyUnicodeAsString(S);
-    Result := string(W);
-  end;
-  Py_XDECREF(S);
 end;
 
 procedure TPythonEngine.DoRedirectIO;
