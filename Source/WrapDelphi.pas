@@ -880,6 +880,7 @@ Type
                               out AValue : TObject) : Boolean;
   function  CheckCallableAttribute(AAttribute : PPyObject; const AAttributeName : string) : Boolean;
   function  CheckEnum(const AEnumName : string; AValue, AMinValue, AMaxValue : Integer) : Boolean;
+  function  CreateSlice(ASequence : TPyObject; AIndex1, AIndex2 : Integer) : PPyObject;
   function  CreateVarParam(PyDelphiWrapper : TPyDelphiWrapper; const AValue : Variant) : PPyObject; overload;
   function  CreateVarParam(PyDelphiWrapper : TPyDelphiWrapper; AObject: TObject) : PPyObject; overload;
   function  SetToPython(ATypeInfo: PTypeInfo; AValue : Integer) : PPyObject; overload;
@@ -1355,6 +1356,30 @@ begin
     with GetPythonEngine do
       PyErr_SetObject (PyExc_AttributeError^,
         PyUnicodeFromString(Format(rs_ErrCheckObj, [AAttributeName])));
+  end;
+end;
+
+function CreateSlice(ASequence : TPyObject; AIndex1, AIndex2 : Integer) : PPyObject;
+var
+  i : Integer;
+  tmp : Integer;
+begin
+  if not CheckIndex(AIndex1, ASequence.SqLength, 'Index1') then
+    Result := nil
+  else if not CheckIndex(AIndex2, ASequence.SqLength, 'Index2') then
+    Result := nil
+  else with GetPythonEngine do
+  begin
+    if AIndex1 > AIndex2 then
+    begin
+      tmp := AIndex2;
+      AIndex2 := AIndex1;
+      AIndex1 := tmp;
+    end;
+
+    Result := PyTuple_New(AIndex2-AIndex1+1);
+    for i := 0 to PyTuple_Size(Result)-1 do
+      PyTuple_SetItem(Result, i, ASequence.SqItem(AIndex1));
   end;
 end;
 
