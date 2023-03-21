@@ -1901,7 +1901,6 @@ type
     _PyString_Resize:function (var ob:PPyObject;i:NativeInt):integer; cdecl;
     Py_GetExecPrefixA                : function : PAnsiChar; cdecl;
     Py_GetPathA                      : function : PAnsiChar; cdecl;
-    Py_SetPathA                      : procedure (path : PAnsiChar); cdecl;
     Py_SetPythonHomeA                : procedure (home : PAnsiChar); cdecl;    
     Py_GetPythonHomeA                : function : PAnsiChar; cdecl;
     Py_GetPrefixA                    : function : PAnsiChar; cdecl;
@@ -4265,16 +4264,17 @@ begin
   PyRange_Type               := Import('PyRange_Type');
   PySlice_Type               := Import('PySlice_Type');
   if not IsPython3000 then
-    PyString_Type              := Import('PyString_Type')
-  else
-    PyString_Type              := Import('PyBytes_Type');
-  PyBytes_Type               := Import('PyBytes_Type');
-  PyByteArray_Type           := Import('PyByteArray_Type');
+    PyString_Type            := Import('PyString_Type');
+
+  if IsPython3000 then begin
+    PyBytes_Type             := Import('PyBytes_Type');
+    PyByteArray_Type         := Import('PyByteArray_Type');
+  end;
   PyTuple_Type               := Import('PyTuple_Type');
   PyUnicode_Type             := Import('PyUnicode_Type');
   PyBaseObject_Type          := Import('PyBaseObject_Type');
   if not IsPython3000 then
-    PyBuffer_Type              := Import('PyBuffer_Type');
+    PyBuffer_Type            := Import('PyBuffer_Type');
   PyCallIter_Type            := Import('PyCallIter_Type');
   PyCell_Type                := Import('PyCell_Type');
   PyClassMethod_Type         := Import('PyClassMethod_Type');
@@ -4342,9 +4342,7 @@ begin
   PyErr_WarnExplicit        := Import('PyErr_WarnExplicit');
   PyEval_GetBuiltins        := Import('PyEval_GetBuiltins');
   PyImport_GetModuleDict    := Import('PyImport_GetModuleDict');
-  if IsPython3000 then
-    PyInt_FromLong          := Import('PyLong_FromLong')
-  else
+  if not IsPython3000 then
     PyInt_FromLong          := Import('PyInt_FromLong');
   PyArg_Parse               := Import('PyArg_Parse');
   PyArg_ParseTuple          := Import('PyArg_ParseTuple');
@@ -4356,23 +4354,24 @@ begin
   PyRun_String              := Import('PyRun_String');
   PyRun_SimpleString        := Import('PyRun_SimpleString');
   PyDict_GetItemString      := Import('PyDict_GetItemString');
-  PySys_SetArgv             := Import('PySys_SetArgv');
+
+  if IsPython3000 then
+    PySys_SetArgv           := Import('PySys_SetArgv')
+  else
+    PySys_SetArgvA          := Import('PySys_SetArgv');
 
   if not IsPython3000 then begin
     PyString_AsString         := Import('PyString_AsString');
     PyString_AsStringAndSize  := Import('PyString_AsStringAndSize')
-  end else begin
-    PyString_AsString         := Import('PyBytes_AsString');
-    PyString_AsStringAndSize  := Import('PyBytes_AsStringAndSize');
   end;
 
   if not IsPython3000 then
     DLL_PyString_FromString   := Import('PyString_FromString');
 
-  Py_Exit                   := Import('Py_Exit');
+  Py_Exit                     := Import('Py_Exit');
 
   if IsPython3000 then
-    PyCFunction_NewEx           :=Import('PyCFunction_NewEx')
+    PyCFunction_NewEx         :=Import('PyCFunction_NewEx')
   else
     PyCFunction_New           :=Import('PyCFunction_New');
 
@@ -4382,19 +4381,19 @@ begin
   PyEval_GetLocals          := Import('PyEval_GetLocals');
   //@PyEval_GetOwner           :=Import('PyEval_GetOwner');
   if not IsPython3000 then
-    PyEval_GetRestricted      :=Import('PyEval_GetRestricted');
+    PyEval_GetRestricted    := Import('PyEval_GetRestricted');
   PyEval_InitThreads        := Import('PyEval_InitThreads');
   PyEval_RestoreThread      := Import('PyEval_RestoreThread');
   PyEval_SaveThread         := Import('PyEval_SaveThread');
   if not IsPython3000 then
-    PyFile_FromString         :=Import('PyFile_FromString');
+    PyFile_FromString       := Import('PyFile_FromString');
   PyFile_GetLine            := Import('PyFile_GetLine');
   if not IsPython3000 then
-    PyFile_Name               :=Import('PyFile_Name');
+    PyFile_Name             := Import('PyFile_Name');
   if not IsPython3000 then
-    PyFile_SetBufSize         :=Import('PyFile_SetBufSize');
+    PyFile_SetBufSize       := Import('PyFile_SetBufSize');
   if not IsPython3000 then
-    PyFile_SoftSpace          :=Import('PyFile_SoftSpace');
+    PyFile_SoftSpace        := Import('PyFile_SoftSpace');
   PyFile_WriteObject        := Import('PyFile_WriteObject');
   PyFile_WriteString        := Import('PyFile_WriteString');
   PyFloat_AsDouble          := Import('PyFloat_AsDouble');
@@ -4436,8 +4435,10 @@ begin
   PyLong_FromString         := Import('PyLong_FromString');
   PyLong_FromUnsignedLong   := Import('PyLong_FromUnsignedLong');
   PyLong_AsUnsignedLong     := Import('PyLong_AsUnsignedLong');
-  PyLong_FromUnicode        :=Import('PyLong_FromUnicode');
-  PyLong_FromUnicodeObject  := Import('PyLong_FromUnicodeObject');
+  if not IsPython3000 then
+    PyLong_FromUnicode      := Import('PyLong_FromUnicode');
+  if IsPython3000 then
+    PyLong_FromUnicodeObject  := Import('PyLong_FromUnicodeObject');
   PyLong_FromLongLong       := Import('PyLong_FromLongLong');
   PyLong_FromUnsignedLongLong := Import('PyLong_FromUnsignedLongLong');
   PyLong_AsLongLong         := Import('PyLong_AsLongLong');
@@ -4448,8 +4449,10 @@ begin
   PyMapping_HasKeyString    := Import('PyMapping_HasKeyString');
   PyMapping_Length          := Import('PyMapping_Length');
   PyMapping_SetItemString   := Import('PyMapping_SetItemString');
-  PyMapping_Keys            := Import('PyMapping_Keys');
-  PyMapping_Values          := Import('PyMapping_Values');
+  if IsPython3000 then begin
+    PyMapping_Keys            := Import('PyMapping_Keys');
+    PyMapping_Values          := Import('PyMapping_Values');
+  end;
   if not IsPython3000 then
     PyMethod_Class            :=Import('PyMethod_Class');
   PyMethod_Function         := Import('PyMethod_Function');
@@ -4485,12 +4488,13 @@ begin
   PyNumber_Rshift           := Import('PyNumber_Rshift');
   PyNumber_Subtract         := Import('PyNumber_Subtract');
   PyNumber_Xor              := Import('PyNumber_Xor');
-  PyOS_InitInterrupts       :=Import('PyOS_InitInterrupts');
+  if not IsPython3000 then
+    PyOS_InitInterrupts     :=Import('PyOS_InitInterrupts');
   PyOS_InterruptOccurred    := Import('PyOS_InterruptOccurred');
   PyObject_CallObject       := Import('PyObject_CallObject');
   PyObject_CallMethod       := Import('PyObject_CallMethod');
   if not IsPython3000 then
-    PyObject_Compare          :=Import('PyObject_Compare');
+    PyObject_Compare        :=Import('PyObject_Compare');
   PyObject_RichCompare      := Import('PyObject_RichCompare');
   PyObject_RichCompareBool  := Import('PyObject_RichCompareBool');
   PyObject_GetAttr          := Import('PyObject_GetAttr');
@@ -4518,7 +4522,8 @@ begin
   PyObject_Call             := Import('PyObject_Call');
   PyObject_GenericGetAttr   := Import('PyObject_GenericGetAttr');
   PyObject_GenericSetAttr   := Import('PyObject_GenericSetAttr');
-  PyObject_GC_Malloc         :=Import('_PyObject_GC_Malloc');
+  if not IsPython3000 then
+    PyObject_GC_Malloc         :=Import('_PyObject_GC_Malloc');
   PyObject_Malloc           := Import('PyObject_Malloc');
   PyObject_GC_New           := Import('_PyObject_GC_New');
   PyObject_GC_NewVar        := Import('_PyObject_GC_NewVar');
@@ -4554,16 +4559,19 @@ begin
     PyString_DecodeEscape     :=Import('PyString_DecodeEscape');
     PyString_Repr             :=Import('PyString_Repr');
   end;
-  PyBytes_AsString           := Import('PyBytes_AsString');
-  PyBytes_AsStringAndSize    := Import('PyBytes_AsStringAndSize');
-  PyBytes_Concat              := Import('PyBytes_Concat');
-  PyBytes_ConcatAndDel        := Import('PyBytes_ConcatAndDel');
-  PyBytes_FromString          := Import('PyBytes_FromString');
-  PyBytes_FromStringAndSize   := Import('PyBytes_FromStringAndSize');
-  PyBytes_Size                := Import('PyBytes_Size');
-  PyBytes_DecodeEscape        := Import('PyBytes_DecodeEscape');
-  PyBytes_Repr                := Import('PyBytes_Repr');
-  _PyBytes_Resize             := Import('_PyBytes_Resize');
+  if IsPython3000 then
+  begin
+    PyBytes_AsString           := Import('PyBytes_AsString');
+    PyBytes_AsStringAndSize    := Import('PyBytes_AsStringAndSize');
+    PyBytes_Concat              := Import('PyBytes_Concat');
+    PyBytes_ConcatAndDel        := Import('PyBytes_ConcatAndDel');
+    PyBytes_FromString          := Import('PyBytes_FromString');
+    PyBytes_FromStringAndSize   := Import('PyBytes_FromStringAndSize');
+    PyBytes_Size                := Import('PyBytes_Size');
+    PyBytes_DecodeEscape        := Import('PyBytes_DecodeEscape');
+    PyBytes_Repr                := Import('PyBytes_Repr');
+    _PyBytes_Resize             := Import('_PyBytes_Resize');
+  end;
   PyByteArray_AsString        := Import('PyByteArray_AsString');
   PyByteArray_Concat          := Import('PyByteArray_Concat');
   PyByteArray_Resize          := Import('PyByteArray_Resize');
@@ -4584,29 +4592,25 @@ begin
   PyType_GenericAlloc         := Import('PyType_GenericAlloc');
   PyType_GenericNew           := Import('PyType_GenericNew');
   PyType_Ready                := Import('PyType_Ready');
-  if not IsPython3000 then begin
-    PyUnicode_FromWideChar      := Import(AnsiString(Format('PyUnicode%s_FromWideChar',[UnicodeSuffix])));
-    PyUnicode_FromString        := Import(AnsiString(Format('PyUnicode%s_FromString',[UnicodeSuffix])));
-    PyUnicode_FromStringAndSize := Import(AnsiString(Format('PyUnicode%s_FromStringAndSize',[UnicodeSuffix])));
-    PyUnicode_AsWideChar        := Import(AnsiString(Format('PyUnicode%s_AsWideChar',[UnicodeSuffix])));
-    PyUnicode_Decode            := Import(AnsiString(Format('PyUnicode%s_Decode',[UnicodeSuffix])));
-    PyUnicode_AsEncodedString   := Import(AnsiString(Format('PyUnicode%s_AsEncodedString',[UnicodeSuffix])));
-    PyUnicode_FromOrdinal       := Import(AnsiString(Format('PyUnicode%s_FromOrdinal',[UnicodeSuffix])));
-    PyUnicode_GetSize           := Import(AnsiString(Format('PyUnicode%s_GetSize',[UnicodeSuffix])));
-  end else begin
-    PyUnicode_FromWideChar      := Import('PyUnicode_FromWideChar');
-    PyUnicode_FromString        := Import('PyUnicode_FromString');
-    PyUnicode_FromStringAndSize := Import('PyUnicode_FromStringAndSize');
-    PyUnicode_AsWideChar        := Import('PyUnicode_AsWideChar');
-    PyUnicode_Decode            := Import('PyUnicode_Decode');
-    PyUnicode_AsEncodedString   := Import('PyUnicode_AsEncodedString');
-    PyUnicode_FromOrdinal       := Import('PyUnicode_FromOrdinal');
+  if not IsPython3000 then
+    PyUnicode_GetSize         := Import(AnsiString(Format('PyUnicode%s_GetSize',[UnicodeSuffix])));
+
+  PyUnicode_FromWideChar      := Import(AnsiString(Format('PyUnicode%s_FromWideChar',[UnicodeSuffix])));
+  PyUnicode_FromString        := Import(AnsiString(Format('PyUnicode%s_FromString',[UnicodeSuffix])));
+  PyUnicode_FromStringAndSize := Import(AnsiString(Format('PyUnicode%s_FromStringAndSize',[UnicodeSuffix])));
+  PyUnicode_AsWideChar        := Import(AnsiString(Format('PyUnicode%s_AsWideChar',[UnicodeSuffix])));
+  PyUnicode_Decode            := Import(AnsiString(Format('PyUnicode%s_Decode',[UnicodeSuffix])));
+  PyUnicode_AsEncodedString   := Import(AnsiString(Format('PyUnicode%s_AsEncodedString',[UnicodeSuffix])));
+  PyUnicode_FromOrdinal       := Import(AnsiString(Format('PyUnicode%s_FromOrdinal',[UnicodeSuffix])));
+
+  if IsPython3000 then begin
+    PyUnicode_FromKindAndData   := Import('PyUnicode_FromKindAndData');
+    PyUnicode_AsUTF8            := Import('PyUnicode_AsUTF8');
+    PyUnicode_AsUTF8AndSize     := Import('PyUnicode_AsUTF8AndSize');
+    PyUnicode_DecodeUTF16       := Import('PyUnicode_DecodeUTF16');
+    PyUnicode_GetLength         := Import('PyUnicode_GetLength');
   end;
-  PyUnicode_FromKindAndData   := Import('PyUnicode_FromKindAndData');
-  PyUnicode_AsUTF8            := Import('PyUnicode_AsUTF8');
-  PyUnicode_AsUTF8AndSize     := Import('PyUnicode_AsUTF8AndSize');
-  PyUnicode_DecodeUTF16       := Import('PyUnicode_DecodeUTF16');
-  PyUnicode_GetLength         := Import('PyUnicode_GetLength');
+
   PyWeakref_GetObject         := Import('PyWeakref_GetObject');
   PyWeakref_NewProxy          := Import('PyWeakref_NewProxy');
   PyWeakref_NewRef            := Import('PyWeakref_NewRef');
@@ -4614,26 +4618,23 @@ begin
   PyBool_FromLong             := Import('PyBool_FromLong');
   PyThreadState_SetAsyncExc   := Import('PyThreadState_SetAsyncExc');
   Py_AtExit                   := Import('Py_AtExit');
-  //Py_Cleanup                :=Import('Py_Cleanup');
+  //Py_Cleanup                := Import('Py_Cleanup');
   Py_FatalError               := Import('Py_FatalError');
   if not IsPython3000 then begin
-    Py_FindMethod           :=Import('Py_FindMethod');
-    Py_FindMethodInChain    :=Import('Py_FindMethodInChain');
-    DLL_Py_FlushLine        :=Import('Py_FlushLine');
-    _PyString_Resize        :=Import('_PyString_Resize');
-    Py_CompileStringFlags   :=Import('Py_CompileStringFlags');
+    Py_FindMethod           := Import('Py_FindMethod');
+    Py_FindMethodInChain    := Import('Py_FindMethodInChain');
+    DLL_Py_FlushLine        := Import('Py_FlushLine');
+    _PyString_Resize        := Import('_PyString_Resize');
+    Py_CompileStringFlags   := Import('Py_CompileStringFlags');
   end else begin
-    _PyString_Resize        :=Import('_PyBytes_Resize');
-    Py_CompileStringExFlags :=Import('Py_CompileStringExFlags');
+    _PyString_Resize        := Import('_PyBytes_Resize');
+    Py_CompileStringExFlags := Import('Py_CompileStringExFlags');
   end;
   _PyObject_New               := Import('_PyObject_New');
   Py_Finalize                 := Import('Py_Finalize');
 
-  if getProcAddress( FDLLHandle, 'PyCode_Addr2Line' ) <> nil then
-    DLL_PyCode_Addr2Line     := Import('PyCode_Addr2Line');
-
-  if getProcAddress( FDLLHandle, 'PyImport_ExecCodeModule' ) <> nil then
-    DLL_PyImport_ExecCodeModule := Import('PyImport_ExecCodeModule');
+  DLL_PyCode_Addr2Line     := Import('PyCode_Addr2Line', false);
+  DLL_PyImport_ExecCodeModule := Import('PyImport_ExecCodeModule', false);
   //@PyClass_IsSubclass         :=Import('PyClass_IsSubclass');
 
   PyErr_ExceptionMatches      := Import('PyErr_ExceptionMatches');
@@ -4644,9 +4645,7 @@ begin
   Py_GetExecPrefix            := Import('Py_GetExecPrefix');
 
   if IsPython3000 then
-    Py_SetPath                := Import('Py_SetPath')
-  else
-    Py_SetPathA               := Import('Py_SetPath');
+    Py_SetPath                := Import('Py_SetPath');
 
   if IsPython3000 then
     Py_GetPath                  := Import('Py_GetPath')
@@ -4690,8 +4689,7 @@ begin
   Py_IsInitialized         := Import('Py_IsInitialized');
   Py_GetProgramFullPath    := Import('Py_GetProgramFullPath');
 
-  if getProcAddress( FDLLHandle, 'Py_GetBuildInfo' ) <> nil then
-    DLL_Py_GetBuildInfo    := Import('Py_GetBuildInfo');
+  DLL_Py_GetBuildInfo    := Import('Py_GetBuildInfo', false);
     
   Py_NewInterpreter        := Import('Py_NewInterpreter');
   Py_EndInterpreter        := Import('Py_EndInterpreter');
